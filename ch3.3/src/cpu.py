@@ -1,21 +1,22 @@
 from typing import NamedTuple
-from enum import Flag
+from enum import IntFlag
+import copy
 
 
-class CpuFlags(Flag):
+class CpuFlags(IntFlag):
   """  Status Register (P)
-    http://wiki.nesdev.com/w/index.php/Status_flags
-  
-  7 6 5 4 3 2 1 0
-  N V _ B D I Z C
-  | |   | | | | +--- Carry Flag
-  | |   | | | +----- Zero Flag
-  | |   | | +------- Interrupt Disable
-  | |   | +--------- Decimal Mode (not used on NES)
-  | |   +----------- Break Command
-  | +--------------- Overflow Flag
-  +----------------- Negative Flag
-  """
+      http://wiki.nesdev.com/w/index.php/Status_flags
+
+    7 6 5 4 3 2 1 0
+    N V _ B D I Z C
+    | |   | | | | +--- Carry Flag
+    | |   | | | +----- Zero Flag
+    | |   | | +------- Interrupt Disable
+    | |   | +--------- Decimal Mode (not used on NES)
+    | |   +----------- Break Command
+    | +--------------- Overflow Flag
+    +----------------- Negative Flag
+    """
 
   CARRY = 0b0000_0001
   ZERO = 0b0000_0010
@@ -25,6 +26,38 @@ class CpuFlags(Flag):
   BREAK2 = 0b0010_0000
   OVERFLOW = 0b0100_0000
   NEGATIV = 0b1000_0000
+  NULL = 0
+
+# fixme: XXX... CpuFlags
+class BitFlags:
+  def __new__(cls):
+    self = super().__new__(cls)
+    self.bits = CpuFlags.NULL
+    return self
+
+  @classmethod
+  def from_bits_truncate(cls, byte: 'u8') -> 'BitFlags':
+    obj = cls()
+    obj.bits |= byte
+    return obj
+
+  def contains(self, byte: 'u8') -> bool:
+    return (self.bits & byte) == byte
+
+  def insert(self, byte: 'u8'):
+    self.bits |= byte
+
+  def remove(self, byte: 'u8'):
+    self.bits &= -(byte + 1)
+
+  def set(self, byte: 'u8', value: bool):
+    if value:
+      self.insert(byte)
+    else:
+      self.remove(byte)
+
+  def clone(self):
+    return copy.copy(self)
 
 
 STACK: 'u16' = 0x0100
@@ -55,7 +88,7 @@ class CPU:
     self.register_y: 'u8' = 0
     self.stack_pointer: 'u8' = STACK_RESET
     self.program_counter: 'u16' = 0
-    self.status: CpuFlags = 0
+    self.status = BitFlags.from_bits_truncate(0b100100)
     self.memory = [None] * 0xFFFF
 
   def mem_read(self, addr: 'u16') -> 'u8':
@@ -247,8 +280,7 @@ class CPU:
     self.register_x = 0
     self.register_y = 0
     self.stack_pointer = STACK_RESET
-    # fixme: bitflags
-    self.status = 0
+    self.status = BitFlags.from_bits_truncate(0b100100)
     self.program_counter = self.mem_read_u16(0xFFFC)
 
   # fixme: bitflags
@@ -592,7 +624,5 @@ class CPU:
 
 
 if __name__ == '__main__':
-  aaa = AddressingMode.Absolute
   cpu = CPU()
-  cpu.load_and_run([0xa9, 0xc0, 0xaa, 0xe8, 0x00])
 
