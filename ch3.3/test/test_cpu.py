@@ -17,6 +17,7 @@ def test_0xa9_lda_immidiate_load_data():
 
 def test_0xaa_tax_move_a_to_x():
   cpu = CPU()
+  # fixme: load_and_run でreset されてるから、`register_a = 10` 通らない
   cpu.register_a = 10
   cpu.load_and_run([0xaa, 0x00])
   assert cpu.register_x == 10
@@ -30,6 +31,7 @@ def test_5_ops_working_together():
 
 def test_inx_overflow():
   cpu = CPU()
+  # fixme: load_and_run でreset されてるから、`register_x = 0xff` 通らない
   cpu.register_x = 0xff
   cpu.load_and_run([0xe8, 0xe8, 0x00])
   assert cpu.register_x == 1
