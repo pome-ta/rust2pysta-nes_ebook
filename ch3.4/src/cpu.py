@@ -91,8 +91,8 @@ class CPU:
     self.program_counter: 'u16' = 0
     self.status = BitFlags.from_bits_truncate(0b100100)
     # fixme: memory initialize None or 0
-    #self.memory = [None] * 0xFFFF
-    self.memory = [0] * 0xFFFF
+    self.memory = [None] * 0xFFFF
+    #self.memory = [0] * 0xFFFF
 
   def mem_read(self, addr: 'u16') -> 'u8':
     return self.memory[addr]
@@ -247,7 +247,13 @@ class CPU:
     else:
       self.status.remove(CpuFlags.ZERO)
 
-    if (result & 0b1000_0000) != 0:
+    if (result >> 7) == 1:
+      self.status.insert(CpuFlags.NEGATIV)
+    else:
+      self.status.remove(CpuFlags.NEGATIV)
+
+  def update_negative_flags(self, result: 'u8'):
+    if (result >> 7) == 1:
       self.status.insert(CpuFlags.NEGATIV)
     else:
       self.status.remove(CpuFlags.NEGATIV)
@@ -273,9 +279,9 @@ class CPU:
 
   def load(self, program: 'Vec<u8>'):
     for n, i in enumerate(program):
-      num = 0x8000 + n
+      num = 0x0600 + n
       self.memory[num] = i
-    self.mem_write_u16(0xFFFC, 0x8000)
+    self.mem_write_u16(0xFFFC, 0x0600)
 
   def reset(self):
     self.register_a = 0
@@ -313,7 +319,7 @@ class CPU:
     addr = self.get_operand_address(mode)
     data = self.mem_read(addr)
     # xxx: check print debug.
-    print(f'must `u8`? -> data: {data}')
+    #print(f'must `u8`? -> data: {data}')
     self.add_to_register_a(0b1111_1111 - data)
 
   def adc(self, mode: '&AddressingMode'):
@@ -329,11 +335,11 @@ class CPU:
     return self.mem_read(STACK + self.stack_pointer)
 
   def stack_push(self, data: 'u8'):
-    print('#333: ', self.stack_pointer)
+    #print('#333: ', self.stack_pointer)
     self.mem_write((STACK + self.stack_pointer), data)
     self.stack_pointer -= 1
     # xxx: check print debug.
-    print(f'wrapping_sub(1) `u8`? -> stack_pointer: {self.stack_pointer}')
+    #print(f'wrapping_sub(1) `u8`? -> stack_pointer: {self.stack_pointer}')
     # todo: Overflow -> wrapping_sub(1)
     if self.stack_pointer <= 0b0000_0000:
       self.stack_pointer = 0b1111_1111 - self.stack_pointer
@@ -403,7 +409,7 @@ class CPU:
     if old_carry:
       data = data | 1
     self.mem_write(addr, data)
-    self.update_zero_and_negative_flags(data)
+    self.update_negative_flags(data)
     return data
 
   def rol_accumulator(self):
@@ -430,7 +436,7 @@ class CPU:
     if old_carry:
       data = data | 0b1000_0000
     self.mem_write(addr, data)
-    self.update_zero_and_negative_flags(data)
+    self.update_negative_flags(data)
     return data
 
   def ror_accumulator(self):
@@ -514,13 +520,13 @@ class CPU:
     else:
       self.status.remove(CpuFlags.CARRY)
     # xxx: check print debug.
-    print(f'wrapping_sub(data) `u8`? -> compare_with: {compare_with}')
+    #print(f'wrapping_sub(data) `u8`? -> compare_with: {compare_with}')
     # todo: Overflow -> wrapping_sub(data)
     compare_with -= data
-    print(f'sub compare_with: {compare_with}')
+    #print(f'sub compare_with: {compare_with}')
     if compare_with <= 0b0000_0000:
       compare_with = 0b1111_1111 - compare_with
-      print(f'ovr compare_with: {compare_with}')
+      #print(f'ovr compare_with: {compare_with}')
     self.update_zero_and_negative_flags(compare_with)
 
   def branch(self, condition: 'bool'):
@@ -537,12 +543,14 @@ class CPU:
         self.program_counter = self.program_counter - (0b1111_1111 + 1)
 
   def run(self):
-    self.run_with_callback(_, *args)
+    #self.run_with_callback(_, *args)
+    pass
 
-  def run_with_callback(self, *args):
+  def run_with_callback(self, _cpu):
+
     _opcodes = opcodes.OPCODES_MAP
-    print('ループ')
     # --- Loop
+    #print('--- Loop ---')
 
     # fixme: while Loop
     while True:
@@ -563,7 +571,7 @@ class CPU:
         self.inx()
 
       elif code == 0x00:
-        print('おわり')
+        print('おわり: ', self.register_a)
         break
 
       # --- CLD
@@ -824,10 +832,8 @@ class CPU:
 
       if program_counter_state == self.program_counter:
         self.program_counter += (opcode.len - 1)
-        
-      print('きた')
-      print(*args)
-      #self.run_with_callback(*args)
+
+      return _cpu
 
 
 if __name__ == '__main__':
@@ -836,4 +842,5 @@ if __name__ == '__main__':
   cpu.load_and_run([0xe8, 0xe8, 0x00])
 
   pass
+
 
