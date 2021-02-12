@@ -2,4 +2,8 @@
 
 > 2021/01/25
 
-up
+IT'S NOT FINISHED AT ALL YET 🙇‍♂️🙇‍♀️
+
+See the dev branch or [memo](./memo.md) for progress.
+
+
