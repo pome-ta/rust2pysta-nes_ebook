@@ -117,7 +117,6 @@ class View(ui.View):
     self.name = 'View'
     self.bg_color = .128
     self.update_interval = 1 / 16384
-    #self.update_interval = 1 / 2048
     self.cpu = CPU()
     self.cpu.load(game_code)
     self.cpu.reset()
