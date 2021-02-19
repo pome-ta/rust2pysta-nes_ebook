@@ -446,7 +446,6 @@ class CPU(Mem):
       self.status.insert(CpuFlags.ZERO)
     else:
       self.status.remove(CpuFlags.ZERO)
-    hoge=1
     self.status.set(CpuFlags.NEGATIV, (data & 0b1000_0000) > 0)
     self.status.set(CpuFlags.OVERFLOW, (data & 0b0100_0000) > 0)
 
@@ -663,7 +662,6 @@ class CPU(Mem):
 
     # --- RTS
     elif code == 0x60:  # 96
-      hoge = 1
       self.program_counter = self.stack_pop_u16() + 1
 
     # --- RTI
